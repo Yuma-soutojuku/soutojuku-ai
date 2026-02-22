@@ -529,15 +529,17 @@ const Instructors = ({ instructors }: { instructors: any[] }) => {
                 <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-xl mr-4 border border-emerald-200 shrink-0 shadow-inner">
                   {inst.name.charAt(0)}
                 </div>
-                <div className="overflow-hidden">
-                  <div className="flex items-baseline gap-2 overflow-hidden">
-                    <h4 className="text-xl font-extrabold text-slate-800 truncate">{inst.name}</h4>
-                    {/* ※font-sm は存在しないクラスなので外して、text-xs のみにしています */}
-                    <p className="text-sm font-bold text-slate-500 truncate">{inst.kana}</p>
+                {/* テキストコンテナ：min-w-0 を追加して「縮む権利」を与える */}
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                    <h4 className="text-xl font-extrabold text-slate-800 leading-none">{inst.name}</h4>
+                    <p className="text-xs font-bold text-slate-500">{inst.kana}</p>
                     </div>
-                    <p className="text-sm font-bold text-emerald-600 truncate">{inst.role}</p>
+                    <p className="text-sm font-bold text-emerald-600 mt-1 leading-tight">
+                    {inst.role}
+                    </p>
                 </div>
-              </div>
+                </div>
               <p className="text-xs font-bold text-slate-500 mb-4 flex items-center truncate bg-slate-50 py-1.5 px-3 rounded-lg border border-slate-100 w-fit">
                 <GraduationCap size={14} className="mr-1.5 text-slate-400" /> {inst.univ}
               </p>
