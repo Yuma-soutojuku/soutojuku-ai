@@ -449,9 +449,11 @@ const CourseList = ({ courses }: { courses: any[] }) => {
 };
 
 const ClassList = ({ activeClasses, pastClasses }: { activeClasses?: any[], pastClasses?: any[] }) => {
-  // CMSデータがない場合はフォールバックの定数を使用
   const displayActive = activeClasses && activeClasses.length > 0 ? activeClasses : ACTIVE_CLASSES;
   const displayPast = pastClasses && pastClasses.length > 0 ? pastClasses : PAST_CLASSES;
+
+  const [isActiveOpen, setIsActiveOpen] = useState(true);
+  const [isPastOpen, setIsPastOpen] = useState(false);
 
   return (
     <div id="classes" className="py-24 bg-white border-y border-emerald-100 relative z-10">
@@ -461,47 +463,77 @@ const ClassList = ({ activeClasses, pastClasses }: { activeClasses?: any[], past
           <p className="text-slate-500 font-medium">現在開講中の授業と、過去の実施実績</p>
         </div>
 
-        {/* 開講中の授業をすべて表示 */}
-        <div className="mb-16">
-          <h3 className="text-xl font-extrabold text-emerald-600 mb-6 flex items-center border-b-2 border-emerald-50 pb-3">
-            <PlayCircle size={24} className="mr-2 text-emerald-500" /> 開講中の授業
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            {displayActive.map((cls: any, idx: number) => (
-              <div key={idx} className="bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100 flex flex-col h-full hover:shadow-md hover:border-emerald-200 transition-all">
-                <div className="mb-4">
-                  <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-white text-emerald-600 border border-emerald-100 shadow-sm">
-                    {cls.target}
-                  </span>
-                </div>
-                <h4 className="text-lg font-extrabold text-slate-800 mb-5 flex-1 leading-snug">{cls.title}</h4>
-                {cls.instructor && (
-                  <div className="text-xs font-bold text-slate-500 border-t border-emerald-100/60 pt-4 mt-auto flex items-center">
-                    <Users size={16} className="mr-2 text-emerald-400" />
-                    担当: {cls.instructor}
+        <div className="mb-8">
+          <button 
+            onClick={() => setIsActiveOpen(!isActiveOpen)}
+            className="w-full flex justify-between items-center bg-emerald-50/50 hover:bg-emerald-100/50 p-4 md:p-5 rounded-2xl border border-emerald-100 transition-colors mb-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          >
+            <h3 className="text-lg md:text-2xl font-extrabold text-emerald-600 flex items-center">
+              <PlayCircle size={24} className="mr-3 text-emerald-500 shrink-0" /> 
+              開講中の授業
+              <span className="ml-3 text-xs md:text-sm font-bold bg-white px-2 py-0.5 rounded-full text-emerald-500 border border-emerald-100 shadow-sm">
+                {displayActive.length}
+              </span>
+            </h3>
+            <ChevronRight 
+              size={24} 
+              className={`text-emerald-500 transition-transform duration-300 shrink-0 ${isActiveOpen ? 'rotate-90' : ''}`} 
+            />
+          </button>
+          
+          <div className={`overflow-hidden transition-[max-height,opacity] duration-500 ease-in-out ${isActiveOpen ? 'max-h-[5000px] opacity-100 mt-6 mb-8' : 'max-h-0 opacity-0'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 pb-4">
+              {displayActive.map((cls: any, idx: number) => (
+                <div key={idx} className="bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100 flex flex-col h-full hover:shadow-md hover:border-emerald-200 transition-all">
+                  <div className="mb-4">
+                    <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-white text-emerald-600 border border-emerald-100 shadow-sm">
+                      {cls.target}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <h4 className="text-lg font-extrabold text-slate-800 mb-5 flex-1 leading-snug">{cls.title}</h4>
+                  {cls.instructor && (
+                    <div className="text-xs font-bold text-slate-500 border-t border-emerald-100/60 pt-4 mt-auto flex items-center">
+                      <Users size={16} className="mr-2 text-emerald-400" />
+                      担当: {cls.instructor}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* 過去の授業をすべて表示 */}
         <div>
-          <h3 className="text-xl font-extrabold text-slate-500 mb-6 flex items-center border-b-2 border-slate-50 pb-3">
-            <History size={24} className="mr-2 text-slate-400" /> 過去の授業
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            {displayPast.map((cls: any, idx: number) => (
-              <div key={idx} className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 flex flex-col h-full hover:bg-slate-50 transition-colors">
-                <div className="mb-4">
-                  <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-white text-slate-500 border border-slate-200 shadow-sm">
-                    {cls.target}
-                  </span>
+          <button 
+            onClick={() => setIsPastOpen(!isPastOpen)}
+            className="w-full flex justify-between items-center bg-slate-50 hover:bg-slate-100 p-4 md:p-5 rounded-2xl border border-slate-200 transition-colors mb-2 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          >
+            <h3 className="text-lg md:text-2xl font-extrabold text-slate-500 flex items-center">
+              <History size={24} className="mr-3 text-slate-400 shrink-0" /> 
+              過去の授業
+              <span className="ml-3 text-xs md:text-sm font-bold bg-white px-2 py-0.5 rounded-full text-slate-400 border border-slate-200 shadow-sm">
+                {displayPast.length}
+              </span>
+            </h3>
+            <ChevronRight 
+              size={24} 
+              className={`text-slate-400 transition-transform duration-300 shrink-0 ${isPastOpen ? 'rotate-90' : ''}`} 
+            />
+          </button>
+
+          <div className={`overflow-hidden transition-[max-height,opacity] duration-500 ease-in-out ${isPastOpen ? 'max-h-[5000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 pb-4">
+              {displayPast.map((cls: any, idx: number) => (
+                <div key={idx} className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 flex flex-col h-full hover:bg-slate-50 transition-colors">
+                  <div className="mb-4">
+                    <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-white text-slate-500 border border-slate-200 shadow-sm">
+                      {cls.target}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-slate-600 flex-1 leading-snug">{cls.title}</h4>
                 </div>
-                <h4 className="text-base font-bold text-slate-600 flex-1 leading-snug">{cls.title}</h4>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
