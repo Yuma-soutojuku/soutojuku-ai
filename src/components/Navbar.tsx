@@ -31,7 +31,7 @@ export const Navbar = () => {
                 </a>
               ))}
               <a href={RESERVATION_URL} target="_blank" rel="noopener noreferrer" className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md shadow-emerald-200">
-                無料体験予約
+                390体験予約
               </a>
             </div>
           </div>
@@ -56,7 +56,7 @@ export const Navbar = () => {
               </a>
             ))}
             <a href={RESERVATION_URL} target="_blank" rel="noopener noreferrer" className="w-full text-center bg-emerald-500 text-white px-4 py-3 rounded-2xl text-base font-bold mt-4 block shadow-md shadow-emerald-200">
-              無料体験予約
+              390体験予約
             </a>
           </div>
         </div>
