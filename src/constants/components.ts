@@ -1,10 +1,10 @@
 // src/constants/constants.ts
 
 export const NAV_ITEMS = [
-  { label: "塾長の想い", href: "#message", icon: "heart" },
-  { label: "コース一覧", href: "#courses" },
-  { label: "授業一覧", href: "#classes" },
-  { label: "講師紹介", href: "#instructors" },
+  { label: "塾長の想い", href: "/message", icon: "heart" },
+  { label: "コース一覧", href: "/#courses" },
+  { label: "授業一覧", href: "/#classes" },
+  { label: "講師紹介", href: "/#instructors" },
 ];
 
 export const RESERVATION_URL = "https://forms.gle/89xACDb9c1EADi2G9";

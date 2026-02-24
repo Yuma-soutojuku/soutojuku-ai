@@ -19,11 +19,6 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: '/recruitment',
-        destination: '/', // 現在求人ページがなければ、一旦トップへ
-        permanent: true,
-      },
-      {
         source: '/20250707',
         destination: '/news/2-__xvfkz', // MicroCMSで作った「約款改定」の記事のIDを指定
         permanent: true,
