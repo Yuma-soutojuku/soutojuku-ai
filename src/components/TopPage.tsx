@@ -5,7 +5,7 @@ import {
   MessageSquare, X, Send, Calendar, CheckCircle, Cpu, 
   Users, Menu, ChevronRight, TrendingUp, Clock, BookOpen,
   Award, Sparkles, GraduationCap, ArrowRight, Zap, MapPin,
-  Heart, FileText, ExternalLink, ZoomIn, Car, PlayCircle, History, Leaf
+  Heart, FileText, ExternalLink, ZoomIn, Car, PlayCircle, History, Leaf, Phone, Mail
 } from 'lucide-react';
 
 import Link from 'next/link';
@@ -32,7 +32,6 @@ import { HERO_CONTENT } from "../constants/components";
 const Hero = () => {
   return (
     <div className="relative bg-emerald-50 pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-      {/* 背景の装飾は構造（デザイン）なのでそのまま */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-emerald-300/30 rounded-full blur-[100px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-teal-300/20 rounded-full blur-[120px]" />
@@ -52,12 +51,12 @@ const Hero = () => {
         </h1>
 
         <p className="mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 mb-12 font-medium leading-relaxed">
-          {HERO_CONTENT.description.map((line, i) => (
+          {HERO_CONTENT.description.map((line: string, i: number) => (
             <span key={i} className="block">{line}</span>
           ))}
         </p>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
           <a 
             href={HERO_CONTENT.ctaPrimary.url} 
             target="_blank" 
@@ -75,6 +74,18 @@ const Hero = () => {
             {HERO_CONTENT.ctaSecondary.label}
           </a>
         </div>
+        
+        {/* ▼ 電話番号の追加箇所 1 ▼ */}
+        <div className="flex items-center justify-center mt-4">
+          <div className="inline-flex items-center justify-center bg-white/70 backdrop-blur-sm px-5 py-2.5 rounded-full border border-emerald-100 shadow-sm transition-transform hover:scale-105">
+            <Phone size={18} className="mr-2.5 text-emerald-500 animate-pulse" />
+            <span className="text-sm font-bold text-slate-500 mr-2 hidden sm:inline">お急ぎの方はお電話で:</span>
+            <a href="tel:090-3872-9234" className="text-slate-800 font-extrabold text-lg md:text-xl font-mono hover:text-emerald-600 transition-colors">
+              090-3872-9234
+            </a>
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -105,7 +116,6 @@ const NewsSection = ({ news }: { news: any[] }) => {
                       <a href={`/news/${item.id}`} className="group block py-3 px-3 -mx-3 rounded-2xl hover:bg-white transition-colors">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                           <span className="text-xs font-bold text-emerald-600 bg-emerald-100/70 border border-emerald-200 px-3 py-1 rounded-full shrink-0 w-fit">
-                            {/* サンプルデータ用にそのまま出力。実データ時はDateパースなど */}
                             {new Date(item.publishedAt).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}
                           </span>
                           <span className="text-slate-700 text-sm font-medium group-hover:text-emerald-600 transition-colors">
@@ -150,13 +160,11 @@ const MessageTeaser = () => {
           </div>
           <div className="w-full md:w-1/3 flex justify-center">
              <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-emerald-50 border-[6px] border-white flex items-center justify-center relative shadow-xl overflow-hidden group">
-                {/* 実際の画像に差し替えてください */}
                 <img 
                   src="/profile.jpeg" 
                   alt="河内 悠眞"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
-                    // フォールバック（画像がない場合）
                     e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
                     e.currentTarget.className = "w-20 h-20 opacity-30";
                   }}
@@ -234,19 +242,15 @@ const Campaigns = () => {
   );
 };
 
-// --- Course Modal Component ---
 const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) => {
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   if (!course) return null;
   return (
-    // 変更箇所 1: モーダル全体の背景 z-[100] -> z-[9990]
     <div className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}>
       
-      {/* 拡大画像モーダル */}
       {enlargedImage && (
         <div 
-          // 変更箇所 2: 拡大画像の背景 z-[70] -> z-[9995]
           className="fixed inset-0 z-[9995] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-200"
           onClick={(e) => {
             e.stopPropagation();
@@ -254,7 +258,6 @@ const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) 
           }}
         >
           <button 
-            // 変更箇所 3: 拡大画像の閉じるボタン z-[80] -> z-[9996]
             className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors z-[9996]"
             onClick={() => setEnlargedImage(null)}
           >
@@ -269,10 +272,8 @@ const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) 
         </div>
       )}
 
-      {/* 変更箇所 4: コース詳細モーダル本体 z-[101] -> z-[9991] */}
       <div className="relative z-[9991] bg-white rounded-3xl border border-emerald-100 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
         
-        {/* ... 以降のコードはそのまま ... */}
         <div className={`h-3 w-full bg-gradient-to-r ${course.color || 'from-emerald-400 to-teal-500'}`} />
         <div className="p-8 overflow-y-auto flex-1">
           <div className="flex justify-between items-start mb-6">
@@ -299,7 +300,6 @@ const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) 
               </p>
             </div>
 
-            {/* 画像表示エリア */}
             {course.images && course.images.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {course.images.map((img: any, index: number) => (
@@ -320,7 +320,6 @@ const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) 
                 ))}
               </div>
             ) : (
-              /* 画像がない場合はプレースホルダーを表示（通常のコースのみ） */
               course.id !== 'past-exam' && (
                 <div className="bg-slate-50 h-48 rounded-3xl flex items-center justify-center border-2 border-dashed border-emerald-100 mb-6 text-slate-400">
                   <div className="text-center">
@@ -348,7 +347,6 @@ const CourseModal = ({ course, onClose }: { course: any, onClose: () => void }) 
 const CourseList = ({ courses }: { courses: any[] }) => {
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
 
-  // CMSデータがない場合はデフォルト定数を使用
   const displayCourses = courses && courses.length > 0 ? courses : COURSES;
 
   return (
@@ -397,7 +395,6 @@ const CourseList = ({ courses }: { courses: any[] }) => {
             </div>
           ))}
           
-          {/* 過去問添削講座 (オプション) */}
           <div className="bg-white/60 rounded-3xl border-2 border-dashed border-emerald-200 p-8 flex flex-col justify-center text-center min-h-[300px] hover:border-emerald-400 hover:bg-white transition-all cursor-pointer group shadow-sm hover:shadow-md" onClick={() => setSelectedCourse(PAST_EXAM_COURSE)}>
             <div className="mb-5 text-rose-400 bg-rose-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
               <FileText size={28} />
@@ -411,7 +408,6 @@ const CourseList = ({ courses }: { courses: any[] }) => {
             </span>
           </div>
 
-          {/* 対面授業講座 (オプション) */}
           <div className="bg-white/60 rounded-3xl border-2 border-dashed border-emerald-200 p-8 flex flex-col justify-center text-center min-h-[300px] hover:border-emerald-400 hover:bg-white transition-all cursor-pointer group shadow-sm hover:shadow-md" onClick={() => setSelectedCourse(FACE_TO_FACE_COURSE)}>
             <div className="mb-5 text-amber-500 bg-amber-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
               <Car size={32} />
@@ -426,7 +422,6 @@ const CourseList = ({ courses }: { courses: any[] }) => {
           </div>
         </div>
 
-        {/* 減免制度案内 */}
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-8 rounded-3xl max-w-3xl mx-auto shadow-sm relative overflow-hidden">
           <div className="absolute -right-4 -top-4 text-amber-200/50">
              <Sparkles size={100} />
@@ -543,7 +538,6 @@ const ClassList = ({ activeClasses, pastClasses }: { activeClasses?: any[], past
 };
 
 const Instructors = ({ instructors }: { instructors: any[] }) => {
-  // CMSデータがない場合はデフォルト定数を使用
   const displayInstructors = instructors && instructors.length > 0 ? instructors : INSTRUCTORS;
 
   return (
@@ -561,7 +555,6 @@ const Instructors = ({ instructors }: { instructors: any[] }) => {
                 <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-xl mr-4 border border-emerald-200 shrink-0 shadow-inner">
                   {inst.name.charAt(0)}
                 </div>
-                {/* テキストコンテナ：min-w-0 を追加して「縮む権利」を与える */}
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                     <h4 className="text-xl font-extrabold text-slate-800 leading-none">{inst.name}</h4>
@@ -572,9 +565,17 @@ const Instructors = ({ instructors }: { instructors: any[] }) => {
                     </p>
                 </div>
                 </div>
-              <p className="text-xs font-bold text-slate-500 mb-4 flex items-center truncate bg-slate-50 py-1.5 px-3 rounded-lg border border-slate-100 w-fit">
+              <p className="text-xs font-bold text-slate-500 mb-2 flex items-center truncate bg-slate-50 py-1.5 px-3 rounded-lg border border-slate-100 w-fit">
                 <GraduationCap size={14} className="mr-1.5 text-slate-400" /> {inst.univ}
               </p>
+              {inst.Email && (
+                <p className="text-xs font-medium text-slate-500 mb-4 flex items-center ml-1">
+                  <Mail size={14} className="mr-2 text-slate-400" />
+                  <a href={`mailto:${inst.Email}`} className="hover:text-emerald-600 transition-colors underline underline-offset-2 decoration-slate-300 hover:decoration-emerald-400">
+                    {inst.Email}
+                  </a>
+                </p>
+              )}
               <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
                 {inst.msg}
               </p>
@@ -621,17 +622,31 @@ const Flow = () => {
             </div>
           ))}
         </div>
+        
+        {/* ▼ 電話番号の追加箇所 2 (Flowセクションの下部) ▼ */}
         <div className="mt-16 text-center">
-           <a href="https://forms.gle/89xACDb9c1EADi2G9" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-lg font-bold rounded-full shadow-lg shadow-emerald-200 transition-all transform hover:-translate-y-1">
+           <a href="https://forms.gle/89xACDb9c1EADi2G9" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-lg font-bold rounded-full shadow-lg shadow-emerald-200 transition-all transform hover:-translate-y-1 mb-8">
              <Zap className="mr-2" size={20} /> 今すぐ390体験に申し込む
            </a>
+           
+           <div className="flex flex-col items-center justify-center pt-8 border-t border-slate-100">
+             <p className="text-slate-500 font-bold text-sm mb-3">お電話での直接のご相談・お問い合わせも承ります</p>
+             <div className="flex items-center justify-center bg-slate-50 px-6 py-3.5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mr-4">
+                 <Phone size={20} className="text-emerald-600" />
+               </div>
+               <a href="tel:090-3872-9234" className="text-slate-800 font-extrabold hover:text-emerald-600 transition-colors font-mono text-2xl tracking-wider">
+                 090-3872-9234
+               </a>
+             </div>
+           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
-// 問い合わせFAB (Floating Action Button)
 const FixedCTAButton = () => {
   return (
     <a 
@@ -677,7 +692,7 @@ export default function TopPage({
         <Instructors instructors={instructors} />
         <Flow />
       </main>
-        <Footer />
+      <Footer />
       <FixedCTAButton />
     </div>
   );
