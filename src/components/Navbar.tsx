@@ -5,6 +5,7 @@ import Link from "next/link";
 // Briefcase アイコンを追加でインポート
 import { Leaf, Heart, Menu, Briefcase } from "lucide-react"; 
 import { NAV_ITEMS, RESERVATION_URL } from "../constants/components";
+import { sendGAEvent } from "@next/third-parties/google"
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,10 +70,24 @@ export const Navbar = () => {
               <Briefcase size={18} className="mr-2 text-blue-400" />
               採用情報
             </Link>
-
-            <a href={RESERVATION_URL} target="_blank" rel="noopener noreferrer" className="w-full text-center bg-emerald-500 text-white px-4 py-3 rounded-2xl text-base font-bold mt-4 block shadow-md shadow-emerald-200">
+            
+            <a
+              href = {RESERVATION_URL}
+              target = "_blank"
+              rel = "noopener noreferrer"
+              onClick = {() => sendGAEvent({
+                event: 'contact_click', 
+                label: 'header_inquiry', // valueよりlabelの方が文字列を扱う際に一般的です
+                value: 390               // 数字を送りたい場合はvalueを使います
+              })}
+              className="w-full text-center bg-emerald-500 text-white px-4 py-3 rounded-2xl text-base font-bold mt-4 block shadow-md shadow-emerald-200"
+            >
               390体験予約
             </a>
+            {/* <a href={RESERVATION_URL} target="_blank" rel="noopener noreferrer" className="w-full text-center bg-emerald-500 text-white px-4 py-3 rounded-2xl text-base font-bold mt-4 block shadow-md shadow-emerald-200">
+              390体験予約
+            </a>
+            </button> */}
           </div>
         </div>
       )}
