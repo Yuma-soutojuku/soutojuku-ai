@@ -50,7 +50,7 @@ export async function GET() {
 
     const calendar = google.calendar({ version: 'v3', auth });
     
-    // --- 【修正ポイント：手動で日本時間の今日を計算し、ISO文字列を組み立てる】 ---
+    // --- 【修正ポイント：日本時間の「今日」から「明日」の範囲を計算する】 ---
     const now = new Date();
     
     // Vercelサーバー(UTC)の現在時刻に9時間(JSTオフセット)を足す
@@ -58,14 +58,18 @@ export async function GET() {
     
     // 日本時間での「今日の年・月・日」を取得
     const year = jstNow.getUTCFullYear();
-    // getUTCMonth()は0-11を返すので+1。padStartで2桁にする
     const month = String(jstNow.getUTCMonth() + 1).padStart(2, '0');
     const day = String(jstNow.getUTCDate()).padStart(2, '0');
 
-    // Google Calendar APIに渡す、日本時間(JST)の今日の始まりと終わりの文字列
-    // 例: "2026-03-13T00:00:00.000+09:00"
+    // 日本時間での「明日の年・月・日」を取得 (現在時刻に24時間を足す)
+    const jstTomorrow = new Date(jstNow.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowYear = jstTomorrow.getUTCFullYear();
+    const tomorrowMonth = String(jstTomorrow.getUTCMonth() + 1).padStart(2, '0');
+    const tomorrowDay = String(jstTomorrow.getUTCDate()).padStart(2, '0');
+
+    // Google Calendar APIに渡す文字列 (今日の0:00 から 明日の23:59まで)
     const timeMin = `${year}-${month}-${day}T00:00:00.000+09:00`;
-    const timeMax = `${year}-${month}-${day}T23:59:59.999+09:00`;
+    const timeMax = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}T23:59:59.999+09:00`;
 
     const res = await calendar.events.list({
       calendarId: '4d5f097f50a5acdaebb19d7d37f91e3dadd227da259c00296c75421a4320453b@group.calendar.google.com',
