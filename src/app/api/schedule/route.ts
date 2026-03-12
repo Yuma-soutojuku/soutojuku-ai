@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { formatInTimeZone } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 
 export async function GET() {
   // 1. セッション取得
@@ -52,13 +53,12 @@ export async function GET() {
     const calendar = google.calendar({ version: 'v3', auth });
     
     // --- 【修正ポイント：date-fns-tz を使用して日本時間基準で作成】 ---
-    const now = new Date();
-    const timeZone = 'Asia/Tokyo';
+    const now = toZonedTime(new Date(), 'Asia/Tokyo');
 
     // JSTの 00:00:00 と 23:59:59 をISO 8601形式（タイムゾーンオフセット付き）の文字列で一発で作成
     // 例: 2026-03-13T00:00:00+09:00
-    const timeMin = formatInTimeZone(now, timeZone, "yyyy-MM-dd'T'00:00:00XXX");
-    const timeMax = formatInTimeZone(now, timeZone, "yyyy-MM-dd'T'23:59:59XXX");
+    const timeMin = formatInTimeZone(now, 'Asia/Tokyo', "yyyy-MM-dd'T'00:00:00XXX");
+    const timeMax = formatInTimeZone(now, 'Asia/Tokyo', "yyyy-MM-dd'T'23:59:59XXX");
 
     const res = await calendar.events.list({
       calendarId: '4d5f097f50a5acdaebb19d7d37f91e3dadd227da259c00296c75421a4320453b@group.calendar.google.com',
