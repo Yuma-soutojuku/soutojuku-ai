@@ -11,12 +11,16 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",
     "@next/third-parties": "^16.1.6",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.1",
     "ai": "^6.0.86",
+    "googleapis": "^171.4.0",
     "lucide-react": "^0.574.0",
     "microcms-js-sdk": "^3.3.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "supabase": "^2.78.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
