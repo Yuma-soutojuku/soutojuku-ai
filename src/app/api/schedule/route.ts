@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export async function GET() {
   // 1. セッション取得
@@ -50,21 +51,14 @@ export async function GET() {
 
     const calendar = google.calendar({ version: 'v3', auth });
     
-    // --- 【修正ポイント：日本時間(JST)基準で今日の0:00〜23:59を作成】 ---
+    // --- 【修正ポイント：date-fns-tz を使用して日本時間基準で作成】 ---
     const now = new Date();
-    
-    // 現在のUTC時間に9時間足して、日本時間の「現在時刻」を擬似的に作る
-    const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    
-    // 日本時間の「今日の年・月・日」を取得
-    const year = jstNow.getUTCFullYear();
-    const month = String(jstNow.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jstNow.getUTCDate()).padStart(2, '0');
+    const timeZone = 'Asia/Tokyo';
 
-    // JSTの 00:00:00 と 23:59:59 をISO 8601形式の文字列で直接作成する
-    // (GoogleカレンダーAPIはタイムゾーンオフセット付きの文字列を正しく解釈します)
-    const timeMin = `${year}-${month}-${day}T00:00:00+09:00`;
-    const timeMax = `${year}-${month}-${day}T23:59:59+09:00`;
+    // JSTの 00:00:00 と 23:59:59 をISO 8601形式（タイムゾーンオフセット付き）の文字列で一発で作成
+    // 例: 2026-03-13T00:00:00+09:00
+    const timeMin = formatInTimeZone(now, timeZone, "yyyy-MM-dd'T'00:00:00XXX");
+    const timeMax = formatInTimeZone(now, timeZone, "yyyy-MM-dd'T'23:59:59XXX");
 
     const res = await calendar.events.list({
       calendarId: '4d5f097f50a5acdaebb19d7d37f91e3dadd227da259c00296c75421a4320453b@group.calendar.google.com',
