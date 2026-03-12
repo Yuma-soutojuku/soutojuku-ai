@@ -31,7 +31,6 @@ export async function GET() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    // ターミナルにエラー内容を出す
     console.log("--- Auth Debug ---");
     console.log("Error:", authError?.message);
     console.log("User:", user);
@@ -42,7 +41,7 @@ export async function GET() {
   const lecturerEmail = user.email;
 
   try {
-    // 2. Google Auth 設定 (test.js で成功した設定)
+    // 2. Google Auth 設定
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -51,18 +50,26 @@ export async function GET() {
 
     const calendar = google.calendar({ version: 'v3', auth });
     
-    // --- 【ここが修正ポイント：範囲を今日のみに限定】 ---
+    // --- 【修正ポイント：日本時間(JST)基準で今日の0:00〜23:59を作成】 ---
     const now = new Date();
     
-    // 今日の 00:00:00 (JST)
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    // 明日の 23:59:59 (JST) に書き換え
-    const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
+    // 現在のUTC時間に9時間足して、日本時間の「現在時刻」を擬似的に作る
+    const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    
+    // 日本時間の「今日の年・月・日」を取得
+    const year = jstNow.getUTCFullYear();
+    const month = String(jstNow.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jstNow.getUTCDate()).padStart(2, '0');
+
+    // JSTの 00:00:00 と 23:59:59 をISO 8601形式の文字列で直接作成する
+    // (GoogleカレンダーAPIはタイムゾーンオフセット付きの文字列を正しく解釈します)
+    const timeMin = `${year}-${month}-${day}T00:00:00+09:00`;
+    const timeMax = `${year}-${month}-${day}T23:59:59+09:00`;
 
     const res = await calendar.events.list({
       calendarId: '4d5f097f50a5acdaebb19d7d37f91e3dadd227da259c00296c75421a4320453b@group.calendar.google.com',
-      timeMin: startOfDay.toISOString(), 
-      timeMax: endOfTomorrow.toISOString(), // 明日の夜まで取得
+      timeMin: timeMin,
+      timeMax: timeMax,
       singleEvents: true,
       orderBy: 'startTime',
       q: lecturerEmail,
@@ -70,7 +77,7 @@ export async function GET() {
     // --------------------------------------------------
 
     const STUDENT_MAP: Record<string, string> = {
-      'shinmikyuuta@gmail.com': '新美', //ここから生徒
+      'shinmikyuuta@gmail.com': '新美', 
       'kfukumotto@gmail.com': '福本',
       'x2353016@gmail.com': '松尾',
       'soutojuku.rental.1@gmail.com': '小澤',
@@ -93,28 +100,22 @@ export async function GET() {
       'nontan0723nontan@gmail.com': '姫野',
       'jialaichuanyoujing@gmail.com': '加瀬川',
       'lrway300@outlook.jp': '中山'
-      // ここにどんどん追加してください
     };
+
     // 4. 整形ロジック
     const events = res.data.items?.filter(event => 
       event.attendees?.some(a => a.email === lecturerEmail)
     ).map(event => {
       
       const studentNames = event.attendees
-        ?.filter(a => !a.email?.endsWith('@soutojuku.com')) // 塾ドメイン除外
+        ?.filter(a => !a.email?.endsWith('@soutojuku.com'))
         .map(a => {
-          const email = a.email?.toLowerCase() || ''; // 小文字に統一して判定
-          
-          // STUDENT_MAPに登録がある場合のみ、その値を返す
+          const email = a.email?.toLowerCase() || ''; 
           if (Object.prototype.hasOwnProperty.call(STUDENT_MAP, email)) {
             return STUDENT_MAP[email];
           }
-          
-          // マップにない場合は null を返して後で消す
-          // (メールアドレスを表示させたくない場合はここを null にする)
           return null; 
         })
-        // null、undefined、空文字をすべて排除
         .filter((name): name is string => !!name) || [];
 
       return {
