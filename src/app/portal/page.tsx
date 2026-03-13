@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { 
   Lock, User, LogIn, Bell, Calendar as CalendarIcon, 
   FileText, Link as LinkIcon, 
-  LogOut, Clock, Video, Wallet, ChevronRight, AlertCircle, CheckCircle2, X, Loader2, CheckCircle
+  LogOut, Clock, Video, Wallet, ChevronRight, AlertCircle, CheckCircle2, X, Loader2, CheckCircle, Send
 } from 'lucide-react';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -134,13 +134,18 @@ export default function EmployeePortal() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  
+  // ★ 初期ロード状態（認証）
   const [loading, setLoading] = useState(true);
   
+  // 各データの状態管理
   const [notices, setNotices] = useState<any[]>([]);
+  const [noticesLoading, setNoticesLoading] = useState(false);
+  
   const [selectedNotice, setSelectedNotice] = useState<any>(null);
   
   const [lessons, setLessons] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [totalReward, setTotalReward] = useState<number>(0);
@@ -154,20 +159,24 @@ export default function EmployeePortal() {
     department: '未登録',
     hiredDate: null 
   });
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      setSession(session);
-      
-      if (user) {
-        setSession({ user });
-        
-        // 1. お知らせの取得
-        try {
-          const response = await fetch('/api/internal-notices');
-          if (!response.ok) throw new Error('Failed to fetch notices');
-          const cmsData = await response.json();
-          
+  // データ取得を別関数として切り出し、並列に実行しやすくする
+  const fetchData = async (user: any) => {
+    // ローディング状態をオン
+    setNoticesLoading(true);
+    setProfileLoading(true);
+    setAttendanceLoading(true);
+    setIsLoading(true);
+
+    // 1. お知らせの取得
+    fetch('/api/internal-notices')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch notices');
+        return res.json();
+      })
+      .then(cmsData => {
+        if(cmsData && cmsData.contents) {
           const filtered = cmsData.contents.filter((notice: any) => {
             const targetTypes = Array.isArray(notice.target_type) ? notice.target_type : [notice.target_type];
             if (!notice.target_type || targetTypes.includes('全員')) return true;
@@ -178,88 +187,110 @@ export default function EmployeePortal() {
             return false;
           });
           setNotices(filtered);
-        } catch (e) {
-          console.error('Error fetching internal notices:', e);
-          setNotices([]);
         }
+      })
+      .catch(e => {
+        console.error('Error fetching notices:', e);
+        setNotices([]);
+      })
+      .finally(() => setNoticesLoading(false));
 
-        // 2. プロフィール情報の取得
-        try {
-          const profileResponse = await fetch('/api/instructor-profiles'); 
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            const myProfile = profileData.contents.find((p: any) => p.email === user.email);
-            
-            if (myProfile) {
-              setProfile({
-                role: myProfile.role || '未登録',
-                type: myProfile.type || '未登録',
-                department: myProfile.department || '未登録',
-                hiredDate: myProfile.hiredDate || myProfile.hiredAt || null 
-              });
-            }
+    // 2. プロフィール情報の取得
+    fetch('/api/instructor-profiles')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        return res.json();
+      })
+      .then(profileData => {
+        if(profileData && profileData.contents) {
+          const myProfile = profileData.contents.find((p: any) => p.email === user.email);
+          if (myProfile) {
+            setProfile({
+              role: myProfile.role || '未登録',
+              type: myProfile.type || '未登録',
+              department: myProfile.department || '未登録',
+              hiredDate: myProfile.hiredDate || myProfile.hiredAt || null 
+            });
           }
-        } catch (e) {
-          console.error('Error fetching profile:', e);
         }
+      })
+      .catch(e => console.error('Error fetching profile:', e))
+      .finally(() => setProfileLoading(false));
 
-        // 3. 勤怠データ(スプレッドシート)の取得
-        setAttendanceLoading(true);
-        setAttendanceError(null);
-        try {
-          // メールアドレスからシート名用の苗字を取得
-          const sheetNameFamily = getFamilyNameFromEmail(user.email);
-          const attRes = await fetch(`/api/attendance?name=${encodeURIComponent(sheetNameFamily)}`);
-          const attData = await attRes.json();
-          
-          setDebugRawData(attData);
-
-          if (attRes.ok) {
-            setAttendanceRecords(attData.records || []);
-            setTotalReward(attData.totalAmount || 0);
-            
-            if (!attData.records || attData.records.length === 0) {
-                setAttendanceError(`シート「${attData.sheetName || sheetNameFamily}」にデータが見つかりませんでした。`);
-            }
-          } else {
-            setAttendanceError(`取得失敗: ${attData.error} / 詳細: ${attData.details || 'なし'}`);
-          }
-        } catch (e: any) {
-          console.error('Error fetching attendance:', e);
-          setAttendanceError(`通信エラー: ${e.message}`);
-        } finally {
-          setAttendanceLoading(false);
-        }
-
-        // 4. カレンダー取得を実行
-        fetchSchedule();
-      }
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchSchedule(); 
-    });
-
-    async function fetchSchedule() {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/schedule', {
-          credentials: 'include', 
-        });
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setLessons(data);
+    // 3. 勤怠データ(スプレッドシート)の取得
+    setAttendanceError(null);
+    const sheetNameFamily = getFamilyNameFromEmail(user.email);
+    fetch(`/api/attendance?name=${encodeURIComponent(sheetNameFamily)}`)
+      .then(res => res.json())
+      .then(attData => {
+        setDebugRawData(attData);
+        if (attData.error) {
+           setAttendanceError(`取得失敗: ${attData.error} / 詳細: ${attData.details || 'なし'}`);
         } else {
-          setLessons([]);
+           setAttendanceRecords(attData.records || []);
+           setTotalReward(attData.totalAmount || 0);
+           if (!attData.records || attData.records.length === 0) {
+              setAttendanceError(`シート「${attData.sheetName || sheetNameFamily}」にデータが見つかりませんでした。`);
+           }
         }
-      } catch (error) {
+      })
+      .catch(e => {
+        console.error('Error fetching attendance:', e);
+        setAttendanceError(`通信エラー: ${e.message}`);
+      })
+      .finally(() => setAttendanceLoading(false));
+
+    // 4. カレンダー取得
+    fetch('/api/schedule', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setLessons(data);
+        else setLessons([]);
+      })
+      .catch(e => {
+        console.error('Error fetching schedule:', e);
         setLessons([]);
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    // コンポーネントマウント時にユーザー情報を取得
+    const checkUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.warn("Auth error detected, clearing session:", error.message);
+          // エラー（無効なトークンなど）の場合はセッションをクリア
+          await supabase.auth.signOut();
+          setSession(null);
+        } else if (user) {
+          setSession({ user });
+          fetchData(user); // データ取得開始
+        } else {
+          setSession(null);
+        }
+      } catch (err) {
+        console.error("Unexpected error during auth check:", err);
+        setSession(null);
       } finally {
-        setIsLoading(false);
+        // ★重要：成功・失敗に関わらず、チェックが終わったら必ずローディングを解除する
+        setLoading(false);
       }
-    }
+    };
+
+    checkUser();
+
+    // 認証状態の変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (currentSession?.user) {
+        setSession(currentSession);
+        fetchData(currentSession.user);
+      } else {
+        setSession(null);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -269,19 +300,27 @@ export default function EmployeePortal() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-            setError('メールアドレスまたはパスワードが間違っています。');
-        } else {
-            setError(error.message); 
-        }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+              setError('メールアドレスまたはパスワードが間違っています。');
+          } else {
+              setError(error.message); 
+          }
+      }
+      // 成功した場合は onAuthStateChange が発火して処理を引き継ぐ
+    } catch(err) {
+       console.error("Login Error:", err);
+       setError('ログイン中に予期せぬエラーが発生しました。');
+    } finally {
+       setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     setNotices([]);
     setAttendanceRecords([]);
     setTotalReward(0);
@@ -305,24 +344,46 @@ export default function EmployeePortal() {
     }).format(new Date(dateString));
   };
 
-  // ★ ここに追加します！ ★
   // lessons配列を「今日」と「明日」に振り分けるロジック
   const now = new Date();
-  const todayStr = now.toLocaleDateString('ja-JP');
+  // Vercel(UTC)でのズレを防ぐため、強制的に日本時間での「今日」の文字列を作る
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const todayYear = jstNow.getUTCFullYear();
+  const todayMonth = String(jstNow.getUTCMonth() + 1).padStart(2, '0');
+  const todayDay = String(jstNow.getUTCDate()).padStart(2, '0');
+  const todayStr = `${todayYear}/${todayMonth}/${todayDay}`; // 例: 2026/03/13
   
-  const tomorrowObj = new Date();
-  tomorrowObj.setDate(now.getDate() + 1);
-  const tomorrowStr = tomorrowObj.toLocaleDateString('ja-JP');
+  const jstTomorrow = new Date(jstNow.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowYear = jstTomorrow.getUTCFullYear();
+  const tomorrowMonth = String(jstTomorrow.getUTCMonth() + 1).padStart(2, '0');
+  const tomorrowDay = String(jstTomorrow.getUTCDate()).padStart(2, '0');
+  const tomorrowStr = `${tomorrowYear}/${tomorrowMonth}/${tomorrowDay}`;
 
-  const todayLessons = lessons.filter(l => 
-    new Date(l.start).toLocaleDateString('ja-JP') === todayStr
-  );
-  const tomorrowLessons = lessons.filter(l => 
-    new Date(l.start).toLocaleDateString('ja-JP') === tomorrowStr
-  );
-  // ★ ここまで ★
+  const todayLessons = lessons.filter(l => {
+    if (!l.start) return false;
+    // APIから返ってきた日付 (例: 2026-03-13T17:00:00+09:00) をDateオブジェクトにし、JST文字列にする
+    const lDate = new Date(l.start);
+    const y = lDate.getFullYear();
+    const m = String(lDate.getMonth() + 1).padStart(2, '0');
+    const d = String(lDate.getDate()).padStart(2, '0');
+    return `${y}/${m}/${d}` === todayStr;
+  });
 
-  if (loading) return <div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>;
+  const tomorrowLessons = lessons.filter(l => {
+    if (!l.start) return false;
+    const lDate = new Date(l.start);
+    const y = lDate.getFullYear();
+    const m = String(lDate.getMonth() + 1).padStart(2, '0');
+    const d = String(lDate.getDate()).padStart(2, '0');
+    return `${y}/${m}/${d}` === tomorrowStr;
+  });
+
+  if (loading) return (
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center">
+      <Loader2 className="animate-spin text-slate-400 mb-4" size={48} />
+      <p className="text-slate-500 font-bold">読み込み中...</p>
+    </div>
+  );
 
   if (!session) {
     return (
@@ -428,7 +489,7 @@ export default function EmployeePortal() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             
-            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
               <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between">
                   <h2 className="font-bold text-slate-800 flex items-center">
                       <CalendarIcon size={18} className="mr-2 text-blue-500" />
@@ -440,7 +501,7 @@ export default function EmployeePortal() {
                       </span>
                   )}
               </div>
-              <div className="p-4 sm:p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4 flex-1">
                   {isLoading ? (
                       <div className="flex justify-center py-8"><Loader2 className="animate-spin text-slate-300" /></div>
                   ) : todayLessons.length === 0 ? (
@@ -482,8 +543,27 @@ export default function EmployeePortal() {
                         </div>
                         </div>
                     ))
-                    )}
-                </div>
+                  )}
+              </div>
+              {/* ▼ 今日の定時報告ボタンを追加 ▼ */}
+              <div className="bg-slate-50 border-t border-slate-200 p-4 sm:p-6 flex justify-end">
+                {todayLessons.length > 0 ? (
+                  <a 
+                    href="https://docs.google.com/spreadsheets/d/1saZdLbZ_JT0r7MUGL-jte7eBeJj0L6ctFWRhUHfmzDM/edit?gid=1203043952#gid=1203043952&range=B2" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:-translate-y-0.5"
+                  >
+                    <Send size={18} className="mr-2" />
+                    今日の定時報告を送る
+                  </a>
+                ) : (
+                  <button disabled className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-slate-200 text-slate-400 text-sm font-bold rounded-xl cursor-not-allowed">
+                    <Send size={18} className="mr-2" />
+                    今日の定時報告を送る
+                  </button>
+                )}
+              </div>
             </section>
 
             {/* --- 明日の授業予定 --- */}
@@ -505,59 +585,40 @@ export default function EmployeePortal() {
                     ) : (
                         tomorrowLessons.map((lesson) => (
                           <div key={lesson.id} className="opacity-70 grayscale-[0.3] hover:grayscale-0 hover:opacity-100 transition-all">
-                            <div className="mb-4 sm:mb-0">
-                              <div className="flex items-center text-blue-600 font-bold mb-1">
-                              <Clock size={16} className="mr-1.5" />
-                              {formatTime(lesson.start)} 〜
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50">
+                              <div className="mb-4 sm:mb-0">
+                                <div className="flex items-center text-blue-600 font-bold mb-1">
+                                <Clock size={16} className="mr-1.5" />
+                                {formatTime(lesson.start)} 〜
+                                </div>
+                                <div className="font-extrabold text-slate-800 text-lg mb-1">
+                                {lesson.students && lesson.students.length > 0 ? lesson.students.join(', ') : '生徒名なし'}
+                                </div>
+                                <div className="text-sm font-medium text-slate-500">{lesson.subject || '科目指定なし'}</div>
                               </div>
-                              <div className="font-extrabold text-slate-800 text-lg mb-1">
-                              {lesson.students && lesson.students.length > 0 ? lesson.students.join(', ') : '生徒名なし'}
-                              </div>
-                            <div className="text-sm font-medium text-slate-500">{lesson.subject || '科目指定なし'}</div>
-                          </div>
 
-                        <div className="flex sm:flex-col gap-2">
-                            {lesson.meetLink ? (
-                            <a
-                                href={lesson.meetLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
-                            >
-                                <Video size={16} className="mr-2" />
-                                Meetを開く
-                            </a>
-                            ) : (
-                            <button disabled className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-slate-200 text-slate-400 text-sm font-bold rounded-lg cursor-not-allowed">
-                                <Video size={16} className="mr-2" />
-                                URLなし
-                            </button>
-                            )}
-                        </div>
+                              <div className="flex sm:flex-col gap-2">
+                                  {lesson.meetLink ? (
+                                  <a
+                                      href={lesson.meetLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+                                  >
+                                      <Video size={16} className="mr-2" />
+                                      Meetを開く
+                                  </a>
+                                  ) : (
+                                  <button disabled className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-slate-200 text-slate-400 text-sm font-bold rounded-lg cursor-not-allowed">
+                                      <Video size={16} className="mr-2" />
+                                      URLなし
+                                  </button>
+                                  )}
+                              </div>
+                            </div>
                         </div>
                     ))
                     )}
-                </div>
-            </section>
-
-            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 p-4">
-                    <h2 className="font-bold text-slate-800 flex items-center">
-                    <LinkIcon size={18} className="mr-2 text-purple-500" />
-                    よく使う業務リンク
-                    </h2>
-                </div>
-                <div className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {MOCK_LINKS.map((link, idx) => (
-                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center text-center p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all group shadow-sm">
-                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <img src={link.iconUrl} alt={link.title} className="w-7 h-7 object-contain" />
-                        </div>
-                        <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{link.title}</span>
-                        </a>
-                    ))}
-                    </div>
                 </div>
             </section>
           </div>
@@ -574,7 +635,9 @@ export default function EmployeePortal() {
                 </div>
                 <div className="p-0">
                     <ul className="divide-y divide-slate-100">
-                    {notices.length > 0 ? (
+                    {noticesLoading ? (
+                        <li className="p-6 text-center text-sm text-slate-400">読み込み中...</li>
+                    ) : notices.length > 0 ? (
                         notices.map((notice: any) => {
                         const isPersonal = Array.isArray(notice.target_type) 
                             ? notice.target_type.includes('特定の講師') 
@@ -612,6 +675,28 @@ export default function EmployeePortal() {
                 </div>
             </section>
 
+            {/* ▼ 「よく使う業務リンク」を右カラムに移動 ▼ */}
+            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 p-4">
+                    <h2 className="font-bold text-slate-800 flex items-center">
+                    <LinkIcon size={18} className="mr-2 text-purple-500" />
+                    よく使う業務リンク
+                    </h2>
+                </div>
+                <div className="p-4 sm:p-6">
+                    <div className="grid grid-cols-2 gap-4">
+                    {MOCK_LINKS.map((link, idx) => (
+                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center text-center p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all group shadow-sm">
+                        <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <img src={link.iconUrl} alt={link.title} className="w-6 h-6 object-contain" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 group-hover:text-blue-600">{link.title}</span>
+                        </a>
+                    ))}
+                    </div>
+                </div>
+            </section>
+
             <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="bg-slate-50 border-b border-slate-200 p-4">
                     <h2 className="font-bold text-slate-800 flex items-center">
@@ -620,24 +705,30 @@ export default function EmployeePortal() {
                     </h2>
                 </div>
                 <div className="p-4 sm:p-6 grid grid-cols-2 gap-4">
-                    <div>
-                    <p className="text-xs text-slate-400 font-medium mb-1">契約形態</p>
-                    <p className="text-sm font-bold text-slate-700">{profile.type}</p>
-                    </div>
-                    <div>
-                    <p className="text-xs text-slate-400 font-medium mb-1">役職</p>
-                    <p className="text-sm font-bold text-slate-700">{profile.role}</p>
-                    </div>
-                    <div>
-                    <p className="text-xs text-slate-400 font-medium mb-1">所属</p>
-                    <p className="text-sm font-bold text-slate-700">{profile.department}</p>
-                    </div>
-                    <div>
-                    <p className="text-xs text-slate-400 font-medium mb-1">勤続期間</p>
-                    <p className="text-sm font-bold text-slate-700">
-                        {calculateDuration(profile.hiredDate)}
-                    </p>
-                    </div>
+                    {profileLoading ? (
+                        <div className="col-span-2 text-center text-sm text-slate-400 py-4">読み込み中...</div>
+                    ) : (
+                        <>
+                            <div>
+                            <p className="text-xs text-slate-400 font-medium mb-1">契約形態</p>
+                            <p className="text-sm font-bold text-slate-700">{profile.type}</p>
+                            </div>
+                            <div>
+                            <p className="text-xs text-slate-400 font-medium mb-1">役職</p>
+                            <p className="text-sm font-bold text-slate-700">{profile.role}</p>
+                            </div>
+                            <div>
+                            <p className="text-xs text-slate-400 font-medium mb-1">所属</p>
+                            <p className="text-sm font-bold text-slate-700">{profile.department}</p>
+                            </div>
+                            <div>
+                            <p className="text-xs text-slate-400 font-medium mb-1">勤続期間</p>
+                            <p className="text-sm font-bold text-slate-700">
+                                {calculateDuration(profile.hiredDate)}
+                            </p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </section>
 
@@ -654,7 +745,7 @@ export default function EmployeePortal() {
                     <div className="text-4xl font-extrabold flex items-baseline">
                     <span className="text-2xl mr-1">¥</span>
                     {attendanceLoading ? (
-                        <span className="animate-pulse">...</span>
+                        <span className="animate-pulse">---</span>
                     ) : (
                         totalReward.toLocaleString()
                     )}
