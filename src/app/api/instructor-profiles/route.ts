@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { portalClient } from '../../../libs/microcms'; // クライアントのパスは適宜変更してください
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const data = await portalClient.getList({
