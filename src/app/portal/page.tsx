@@ -650,8 +650,8 @@ export default function EmployeePortal() {
                                 <span className="text-xs font-mono text-slate-400">
                                     {new Date(notice.publishedAt).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}
                                 </span>
-                                {notice.type === 'important' && (
-                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-sm border border-red-200 ml-2">重要</span>
+                                {(Array.isArray(notice.type) ? notice.type.includes('important') : notice.type === 'important') && (
+                                <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-sm border border-red-200 ml-2">重要</span>
                                 )}
                                 {isPersonal && (
                                     <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-sm border border-blue-200 ml-2">
