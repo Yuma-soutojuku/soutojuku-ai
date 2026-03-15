@@ -51,9 +51,7 @@ export async function POST(req: Request) {
           from: `"桑都塾 STAFF PORTAL" <${process.env.EMAIL_USER}>`,
           to: targetEmails.join(','),
           subject: `【桑都塾】あなた宛の新しいお知らせがあります`,
-          text: `お疲れ様です。
-          
-桑都塾STAFF PORTALに、あなた宛ての新しいお知らせが追加されました。
+          text: `桑都塾STAFF PORTALに、あなた宛ての新しいお知らせが追加されました。
 
 【件名】
 ${notice.title}
