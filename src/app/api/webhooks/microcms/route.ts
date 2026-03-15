@@ -19,12 +19,13 @@ export async function POST(req: Request) {
     console.log('📦 Received body:', JSON.stringify(body, null, 2)); // [ログ] MicroCMSから何が送られてきたか全て表示
 
     // 新しく追加（または更新）されたデータがあるか確認
-    if (!body || !body.contents || !body.contents.new) {
+    // ★修正ポイント: MicroCMSのWebhookのデータ構造に合わせて .publishValue を参照する
+    if (!body || !body.contents || !body.contents.new || !body.contents.new.publishValue) {
       console.log('⏭️ No new contents found in body. Exiting.'); // [ログ] データが見つからなかった場合
       return NextResponse.json({ message: 'No new contents' });
     }
 
-    const notice = body.contents.new;
+    const notice = body.contents.new.publishValue;
 
     // 3. 「特定の講師」宛てかどうかを判定
     const targetTypes = Array.isArray(notice.target_type) ? notice.target_type : [notice.target_type];
