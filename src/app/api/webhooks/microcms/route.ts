@@ -49,7 +49,8 @@ export async function POST(req: Request) {
         // 5. メールの内容
         const mailOptions = {
           from: `"桑都塾 STAFF PORTAL" <${process.env.EMAIL_USER}>`,
-          to: targetEmails.join(','),
+          to: process.env.EMAIL_USER, // Toには送信元アドレスを設定（必須項目エラー防止）
+          bcc: targetEmails.join(','), // 実際の宛先はBCCに設定してプライバシーを保護
           subject: `【桑都塾】あなた宛の新しいお知らせがあります`,
           text: `桑都塾STAFF PORTALに、あなた宛ての新しいお知らせが追加されました。
 
@@ -65,7 +66,7 @@ https://soutojuku.com/portal
         };
 
         // 6. メール送信実行
-        console.log('🚀 Attempting to send email to:', targetEmails.join(',')); // [ログ] 送信試行
+        console.log('🚀 Attempting to send email to BCC:', targetEmails.join(',')); // [ログ] 送信試行
         const info = await transporter.sendMail(mailOptions);
         console.log('✅ Notice email successfully sent! Message ID:', info.messageId); // [ログ] 送信成功！
       } else {
