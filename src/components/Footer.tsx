@@ -11,7 +11,7 @@ export const Footer = () => {
         <p className="text-slate-500">代表：河内 悠眞 (個人事業主) / 八王子発</p>
       </div>
       <div className="flex justify-center gap-6 mb-8">
-        <a href="https://www.soutojuku.com/_files/ugd/9606e3_81d373de02ec4a4bacceb7a159507197.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 font-bold flex items-center transition-colors">
+        <a href="https://www.soutojuku.com/入塾約款20250707.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 font-bold flex items-center transition-colors">
           <FileText size={16} className="mr-1.5"/> 入塾約款
         </a>
       </div>
