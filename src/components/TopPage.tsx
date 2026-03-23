@@ -576,6 +576,14 @@ const Instructors = ({ instructors }: { instructors: any[] }) => {
                   </a>
                 </p>
               )}
+              {inst.website && (
+                <p className="text-xs font-medium text-slate-500 mb-4 flex items-center ml-1">
+                  <ExternalLink size={14} className="mr-2 text-slate-400" />
+                  <a href={inst.website} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 transition-colors underline underline-offset-2 decoration-slate-300 hover:decoration-emerald-400">
+                    個人ホームページ
+                  </a>
+                </p>
+              )}
               <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
                 {inst.msg}
               </p>
